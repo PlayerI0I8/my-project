@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  # --- 1. Database (MySQL) ---
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: mydatabase
+      MYSQL_USER: myuser
+      MYSQL_PASSWORD: mypassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # --- 2. phpMyAdmin (DB Management) ---
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    depends_on:
+      - db
+    environment:
+      PMA_HOST: db
+      PMA_USER: root
+      PMA_PASSWORD: rootpassword
+    ports:
+      - "8080:80"
+
+  # --- 3. Django Backend (API Python) ---
+  django:
+    build: ./django_docker
+    # คำสั่งรัน Server (รอ DB แป๊บนึงแล้วค่อยรัน)
+    command: sh -c "python wait_for_db.py && python manage.py runserver 0.0.0.0:8001"
+    volumes:
+      - ./django_src:/app  # โค้ด Django จะอยู่ที่โฟลเดอร์ django_src
+    ports:
+      - "8001:8001"
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_NAME=mydatabase
+      - DB_USER=myuser
+      - DB_PASS=mypassword
+
+  # --- 4. PHP Backend (API PHP) ---
+  php:
+    build: ./php_code
+    volumes:
+      - ./php_code:/var/www/html
+    ports:
+      - "8002:80"
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_USER=myuser
+      - DB_PASS=mypassword
+
+volumes:
+  db_data:

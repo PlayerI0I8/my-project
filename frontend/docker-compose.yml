@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  web: 
+    build: .
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - VITE_DJANGO_API=http://localhost:8001
+      - VITE_PHP_API=http://localhost:8002
+    command: npm run dev -- --host
